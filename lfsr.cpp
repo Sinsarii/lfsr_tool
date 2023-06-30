@@ -18,13 +18,14 @@
 
 */
 
+
 struct Entry
 {
 	//Name of entry
-	std::string name;
+	std::string name = "";
 
 	//pointer to block list
-	int32_t block_list_pointer;
+	int32_t block_list_pointer = 0;
 
 	//block list
 	std::map<int16_t, int32_t> block_list;
@@ -32,12 +33,14 @@ struct Entry
 	unsigned char* encryptedData;
 
 	//decrypted data of combined block list
-	unsigned char decryptedData;
+	unsigned char* decryptedData;
 
 	//length of combined data
-	int dataLength;
+	int dataLength = 0;
 
 };
+
+std::vector<Entry> Entry_List_Vector;
 
 bool check_if_null_terminator(unsigned char* encrypted_data, int32_t pointer)
 {
@@ -113,8 +116,54 @@ int32_t getEntryListPointer(unsigned char* encryptedData, int32_t &pointer)
 	*/
 }
 
+void getEntryListVector(unsigned char* encryptedData, int32_t pointer)
+{
+	const unsigned int ENDING_POINT = 0xFFFFFFFF;
+	const int MAX_ENTRIES = 127;
 
-std::map<std::string, int32_t> getEntryListFinal(unsigned char* encryptedData, int32_t pointer)
+	std::int32_t current_index = pointer;
+	std::int32_t starting_index = pointer;
+
+	while (Entry_List_Vector.size() < MAX_ENTRIES && current_index < ENDING_POINT)
+	{
+		unsigned char block_list_pointer[4] = { 0x0, 0x0, 0x0, 0x0 };
+		char current_name[16] = { 0 };  // Initialize current_name with null characters
+		std::int32_t current_pointer = 0;
+
+		// Grab each entry
+		// Name is a char[16] null terminated
+		// Get int32 pointer
+		// char[16] + int32 = 20 indices of the encrypted data
+
+		// Iterate to grab the name
+		for (int i = 0; i < 16 && encryptedData[current_index] != '\0'; ++i, ++current_index)
+		{
+			current_name[i] = static_cast<char>(encryptedData[current_index]);
+		}
+		// Increment and iterate to grab the pointer
+		//current_index += 2;
+		//starting_index = current_index;
+		current_index++;
+
+		current_pointer = getEntryListPointer(encryptedData, current_index);
+
+		Entry currentEntry;
+
+		currentEntry.name = current_name;
+		currentEntry.block_list_pointer = current_pointer;
+
+		Entry_List_Vector.push_back(currentEntry);
+
+		current_index++;
+		if (check_if_null_terminator(encryptedData, current_index))
+		{
+			break;
+		}
+		starting_index = current_index;
+	}
+}
+
+std::map<std::string, int32_t> getEntryList(unsigned char* encryptedData, int32_t pointer)
 {
 	std::map<std::string, int32_t> ENTRY_LIST;
 	const unsigned int ENDING_POINT = 0xFFFFFFFF;
@@ -143,92 +192,17 @@ std::map<std::string, int32_t> getEntryListFinal(unsigned char* encryptedData, i
 		//starting_index = current_index;
 		current_index++;
 
-		//std::memcpy(&current_pointer, &encryptedData[current_index], sizeof(int32_t));
-
-		/*
-		int num_bytes = 0;
-		while (encryptedData[current_index + num_bytes] & 0x80)
-		{
-			num_bytes++;
-		}
-		num_bytes++;
-		std::memcpy(&current_pointer, &encryptedData[current_index], num_bytes);
-		current_index += num_bytes;
-		*/
-
 		current_pointer = getEntryListPointer(encryptedData, current_index);
-		/*
-		for (int i = 0; i < sizeof(int32_t); ++i, current_index++)
-		{
-			current_pointer |= (static_cast<std::int32_t>(encryptedData[current_index]) << (i * 8));
-		}
-		*/
 
-		/*
-		for (int i = 0; i < 4; ++i, ++current_index)
-		{
-			block_list_pointer[i] = encryptedData[current_index];
-		}
-		for (int i = 0; i < 4; ++i)
-		{
-			current_pointer |= (static_cast<std::int32_t>(block_list_pointer[i]) << (i * 8));
-		}
-		*/
 
 		ENTRY_LIST[std::string(current_name)] = current_pointer;
 	
-		//current_index+= sizeof(int32_t);
 		current_index++;
 		if (check_if_null_terminator(encryptedData, current_index))
 		{
 			break;
 		}
 		starting_index = current_index;
-	}
-
-	return ENTRY_LIST;
-}
-
-std::map<std::string, int32_t> getEntryList(unsigned char* encryptedData, int32_t pointer)
-{
-	std::map<std::string, int32_t> ENTRY_LIST;
-	const unsigned int ENDING_POINT = 0xFFFFFFFF;
-	const int MAX_ENTRIES = 127;
-	std::int32_t current_index = pointer;
-	std::int32_t starting_index = pointer;
-	//use the pointer to start at the Entry list starting point
-	//array is a maximum of 127 entries
-	//0xFFFFFFFF signifies ending point
-	while(ENTRY_LIST.size() < 127)
-	{
-		unsigned char block_list_pointer[] = { 0x0,0x0,0x0,0x0 };
-		std::string current_name;
-		std::int32_t current_pointer = 0;
-		unsigned char current_name_array[16];
-		//grab each entry
-		//Name is a char[16] null terminated
-		//get int32 pointer
-		//char[16] + int32 = 20 indices of the ecrypted data
-
-		//starting point is pointer
-		//interate to grabe the name
-		for (current_index; (current_index - starting_index) < 15 && encryptedData[current_index] != '\0'; current_index++)
-		{
-			current_name_array[(current_index - starting_index)] = encryptedData[current_index];
-		}
-		//increment and iterate to grab the pointer
-		current_index += 2;
-		starting_index = current_index;
-		for (current_index; current_index - starting_index < 4; current_index++)
-		{
-			block_list_pointer[current_index - starting_index] = encryptedData[current_index];
-		}
-		for (int i = 0; i < 4; i++)
-		{
-			current_pointer |= (block_list_pointer[i] << (i * 8));
-		}
-		current_name = reinterpret_cast<const char>(current_name_array);
-		ENTRY_LIST[current_name] = current_pointer;
 	}
 
 	return ENTRY_LIST;
@@ -276,13 +250,6 @@ unsigned int lfsr(unsigned int seed)
 	}
 	return seed;
 }
-
-/*
--pointer to element in array
--size of array
--initial seed value
-*/
-
 
 unsigned char* Crypt(unsigned char* data, int dataLength, unsigned int initialValue)
 {
@@ -339,7 +306,7 @@ unsigned char* readFile(std::string filePath)
 	//read file and store it in char array
 	unsigned char* data = new unsigned char[dataLength];
 
-	file.read(reinterpret_cast<char*>(data), dataLength);
+	file.read(reinterpret_cast<char*>(data), dataLength);[
 
 	file.close();
 
@@ -481,6 +448,14 @@ std::map<std::int16_t, int32_t> get_Block_List(unsigned char* encryptedData, std
 	return BLOCK_LIST;
 }
 
+void get_Block_List_All(unsigned char* encryptedData)
+{
+	for (Entry& current_entry: Entry_List_Vector)
+	{
+		current_entry.block_list = get_Block_List(encryptedData, current_entry.block_list_pointer);
+	}
+}
+
 std::map<std::string, std::map<std::int16_t, int32_t>> get_Block_Master_List(unsigned char* encryptedData, std::map<std::string, int32_t> entryList)
 {
 	std::map<std::string, std::map<std::int16_t, int32_t>> BLOCK_MASTER_LIST;
@@ -539,6 +514,43 @@ unsigned char* get_block_data(unsigned char* encryptedData,std::map<std::int16_t
 	//
 }
 
+std::pair<unsigned char*,int16_t> get_block_data_and_size(unsigned char* encryptedData, std::map<std::int16_t, int32_t> block_list)
+{
+	//need to get the length of the combined data
+	int16_t data_length = 0;
+
+	for (auto i = block_list.begin(); i != block_list.end(); i++)
+	{
+		data_length += i->first;
+	}
+
+	unsigned char* block_data = new unsigned char[data_length];
+
+	int16_t rolling_size = 0;
+
+	for (auto i = block_list.begin(); i != block_list.end(); i++)
+	{
+		unsigned char* block_data_segment = new unsigned char[i->first];
+		block_data_segment = get_block_data_segment(encryptedData, i->first, i->second);
+		memcpy(block_data + rolling_size, block_data_segment, i->first);
+		rolling_size += i->first;
+	}
+
+	return std::make_pair(block_data, data_length);
+
+	//
+}
+
+void get_Block_Data_Vector(unsigned char* encryptedData)
+{
+	for (Entry& current_entry : Entry_List_Vector)
+	{
+		auto data_and_size = get_block_data_and_size(encryptedData, current_entry.block_list);
+		current_entry.encryptedData = data_and_size.first;
+		current_entry.dataLength = data_and_size.second;
+	}
+}
+
 std::map<std::string, unsigned char*> get_block_data_masterlist(unsigned char* encryptedData, std::map<std::string, std::map<std::int16_t, int32_t>> block_master_list, std::map<std::string,Entry>& ENTRY_LIST_DATA)
 {
 	std::map<std::string, unsigned char*> block_data_masterlist;
@@ -552,7 +564,18 @@ std::map<std::string, unsigned char*> get_block_data_masterlist(unsigned char* e
 	return block_data_masterlist;
 }
 
-[unsigned char* readKDB(std::string inputFile)
+void decrypt_block_data()
+{
+	const unsigned int INITIAL_VALUE = 0x4F574154;
+
+
+	for (Entry& current_entry : Entry_List_Vector)
+	{
+		current_entry.decryptedData = Crypt(current_entry.encryptedData, current_entry.dataLength, INITIAL_VALUE);
+	}
+}
+
+unsigned char* readKDB(std::string inputFile)
 {
 	unsigned char* encryptedData = readFile(inputFile);
 
@@ -560,14 +583,17 @@ std::map<std::string, unsigned char*> get_block_data_masterlist(unsigned char* e
 	int32_t ENTRY_LIST_POINTER = get_head_pointer(encryptedData);
 	std::map<std::string, Entry> ENTRY_LIST_DATA;
 	//read and store the entry list (array of entries)
-	std::map<std::string, std::int32_t> ENTRY_LIST = getEntryListFinal(encryptedData, ENTRY_LIST_POINTER);
+	std::map<std::string, std::int32_t> ENTRY_LIST = getEntryList(encryptedData, ENTRY_LIST_POINTER);
+	getEntryListVector(encryptedData, ENTRY_LIST_POINTER);
 	//read each entry which has pointer to the ENTRY'S BLOCK_LIST
 	std::map<std::string, std::map<std::int16_t, int32_t>> BLOCK_MASTER_LIST = get_Block_Master_List(encryptedData, ENTRY_LIST);
+	get_Block_List_All(encryptedData);
 	//store the BLOCK_LIST for each entry, which is an array of BLOCKS
 	std::map<std::string, unsigned char*> BLOCK_DATA_MASTERLIST = get_block_data_masterlist(encryptedData, BLOCK_MASTER_LIST, ENTRY_LIST_DATA);
+	get_Block_Data_Vector(encryptedData);
 	//read each block to get pointer to data and size of data
-
-	//combine all blocks and the decode
+	decrypt_block_data();
+	//combine all blocks and the decode[[
 
 	//decrypt data
 
