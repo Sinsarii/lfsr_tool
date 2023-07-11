@@ -27,7 +27,9 @@
     <Text Include="test.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="C:\Users\mikol\Downloads\SW_2018\SW_2018\magic.kdb" />
     <None Include="C:\Users\mikol\Downloads\SW_2018\SW_2018\store.kdb" />
+    <None Include="store.kdb" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

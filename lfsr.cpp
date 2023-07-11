@@ -18,6 +18,18 @@
 
 */
 
+struct JPEG_Data
+{
+	unsigned char* jpeg_data;
+
+	unsigned char* MD5_hash;
+
+	std::string file_path;
+
+	int offset;
+
+	int data_length;
+};
 
 struct Entry
 {
@@ -233,7 +245,6 @@ int32_t get_head_pointer(unsigned char* encrypted_data)
 	}
 	return ENTRY_LIST_POINTER;
 }
-
 
 unsigned int lfsr(unsigned int seed)
 {
@@ -575,6 +586,9 @@ void decrypt_block_data()
 	}
 }
 
+
+
+
 unsigned char* readKDB(std::string inputFile)
 {
 	unsigned char* encryptedData = readFile(inputFile);
@@ -600,9 +614,78 @@ unsigned char* readKDB(std::string inputFile)
 	return 0;
 }
 
+void load_jpeg_data()
+{
+	std::string KDB_Filepath;
+	//get path to KDB File
+	std::cout << "KDB Filepath: ";
+	std::cin >> KDB_Filepath;
+	std::cout << std::endl;
+
+	std::string INPUT_Filepath;
+	//get filepath from second input
+	std::cout << "Second Filepath: ";
+	std::cin >> INPUT_Filepath;
+	std::cout << std::endl;
+
+	//read kdb file and use ENTRY "MAGIC" data as magic bytes
+
+	//
+}
+
+
+void get_magic_bytes(const std::map<std::string, Entry>& ENTRY_LIST_DATA)
+{
+	if (ENTRY_LIST_DATA.find("MAGIC")!=ENTRY_LIST_DATA.end())
+	{
+
+	}
+}
+
+bool bytes_found(const unsigned char* &input_file_data, unsigned char* magic_bytes, int current_index)
+{
+	int length = *(&magic_bytes + 1) - magic_bytes;
+
+	for (int i = current_index; i < length+current_index; i++)
+	{
+		if (input_file_data[i] != magic_bytes[i])
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+unsigned char* get_jpeg_data(const unsigned char* &input_file_data, unsigned char* ending_bytes, int current_index)
+{
+	int length = *(&input_file_data + 1) - input_file_data;
+}
+std::vector<JPEG_Data> detect_JPEGs(unsigned char* input_file_data, unsigned char* magic_bytes, unsigned char* ending_bytes)
+{
+	int length = *(&input_file_data + 1) - input_file_data;
+
+	for (int i = 0; i < length; i++)
+	{
+		if (input_file_data[i] = magic_bytes[i])
+		{
+			if (bytes_found(input_file_data, magic_bytes, i))
+			{
+
+			}
+		}
+	}
+}
+
+void identify_jpegs(std::string input_filepath, unsigned char* magic_bytes)
+{
+	unsigned char* input_file_data = readKDB(input_filepath);
+
+	//grab jpeg and replace starting bytes
+}
+
 int main()
 {
 	//challenge1();
-	readKDB("store.kdb");
+	readKDB("magic.kdb");
 	return 0;
 }

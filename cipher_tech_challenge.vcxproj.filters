@@ -34,5 +34,9 @@
     <None Include="C:\Users\mikol\Downloads\SW_2018\SW_2018\store.kdb">
       <Filter>Source Files</Filter>
     </None>
+    <None Include="C:\Users\mikol\Downloads\SW_2018\SW_2018\magic.kdb">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="store.kdb" />
   </ItemGroup>
 </Project>
