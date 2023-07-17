@@ -18,6 +18,13 @@
 
 */
 
+struct Data
+{
+	unsigned char* array;
+
+	int array_length;
+};
+
 struct JPEG_Data
 {
 	unsigned char* jpeg_data;
@@ -634,21 +641,22 @@ void load_jpeg_data()
 }
 
 
-void get_magic_bytes(const std::map<std::string, Entry>& ENTRY_LIST_DATA)
+unsigned char* get_magic_bytes()
 {
-	if (ENTRY_LIST_DATA.find("MAGIC")!=ENTRY_LIST_DATA.end())
+	for (Entry current_entry : Entry_List_Vector)
 	{
-
+		if (current_entry.name == "MAGIC")
+		{
+			return current_entry.decryptedData;
+		}
 	}
 }
 
-bool bytes_found(const unsigned char* &input_file_data, unsigned char* magic_bytes, int current_index)
+bool bytes_found(std::vector<unsigned char>& input_file_data, std::vector<unsigned char> magic_bytes, int current_index)
 {
-	int length = *(&magic_bytes + 1) - magic_bytes;
-
-	for (int i = current_index; i < length+current_index; i++)
+	for (int i = current_index; i < magic_bytes.size() + current_index; i++)
 	{
-		if (input_file_data[i] != magic_bytes[i])
+		if (input_file_data[i] != magic_bytes[i - current_index])
 		{
 			return false;
 		}
@@ -656,36 +664,218 @@ bool bytes_found(const unsigned char* &input_file_data, unsigned char* magic_byt
 	return true;
 }
 
-unsigned char* get_jpeg_data(const unsigned char* &input_file_data, unsigned char* ending_bytes, int current_index)
-{
-	int length = *(&input_file_data + 1) - input_file_data;
-}
-std::vector<JPEG_Data> detect_JPEGs(unsigned char* input_file_data, unsigned char* magic_bytes, unsigned char* ending_bytes)
-{
-	int length = *(&input_file_data + 1) - input_file_data;
 
-	for (int i = 0; i < length; i++)
+unsigned char* get_jpeg_data(std::vector<unsigned char>& input_file_data, std::vector<unsigned char> ending_bytes, int current_index)
+{
+
+	for (int i = current_index; i < input_file_data.size(); i++)
 	{
-		if (input_file_data[i] = magic_bytes[i])
+		if (input_file_data[i] == ending_bytes[0])
 		{
-			if (bytes_found(input_file_data, magic_bytes, i))
+			if (bytes_found(input_file_data, ending_bytes, i))
 			{
+				size_t data_size = (i - current_index + ending_bytes.size()) * sizeof(unsigned char);
+				unsigned char* jpeg_data = new unsigned char[data_size];
+				std::memcpy(jpeg_data, &input_file_data[current_index], data_size);
+				return jpeg_data;
 
 			}
 		}
 	}
+
+	return NULL;
+}
+
+std::vector<JPEG_Data> detect_JPEGs(std::vector<unsigned char> &input_file_data, std::vector<unsigned char> magic_bytes, std::vector<unsigned char> ending_bytes)
+{
+	std::vector<JPEG_Data> JPEG_Data_List;
+
+	for (int i = 0; i < input_file_data.size(); i++)
+	{
+		if (input_file_data[i] == magic_bytes[0])
+		{
+			if (bytes_found(input_file_data, magic_bytes, i))
+			{
+				JPEG_Data Entry;
+				Entry.jpeg_data = get_jpeg_data(input_file_data, ending_bytes, i);
+				JPEG_Data_List.push_back(Entry);
+			}
+		}
+	}
+
+	return JPEG_Data_List;
+}
+
+
+bool magic_bytes_found(unsigned char*& data, std::vector<unsigned char> magic_bytes, int current_index)
+{
+	for (int i = current_index; i < magic_bytes.size() + current_index; i++)
+	{
+		if (data[i] != magic_bytes[i - current_index])
+		{
+			return false;
+		}
+	}
+	return true;
+}
+JPEG_Data get_jpeg_entry(Data input_file_data, std::vector<unsigned char> ending_bytes, int current_index)
+{
+	JPEG_Data entry;
+
+	for (int i = current_index; i < input_file_data.array_length; i++)
+	{
+		if (input_file_data.array[i] == ending_bytes[0])
+		{
+			if (magic_bytes_found(input_file_data.array, ending_bytes, i))
+			{
+				int length = (i + ending_bytes.size()) - current_index;
+				//unsigned char* jpeg_data = new unsigned char[length];
+
+				entry.jpeg_data = new unsigned char[length];
+
+				//std::copy(input_file_data.array + current_index, input_file_data.array + current_index + length, entry.jpeg_data);
+
+				memcpy(entry.jpeg_data, input_file_data.array + current_index, length);
+
+				entry.data_length = length;
+				return entry;
+
+			}
+		}
+	}
+	entry.data_length = NULL;
+	return entry;
+}
+
+
+
+std::vector<JPEG_Data> store_JPEGs(Data input_File_Data, std::vector<unsigned char> magic_bytes, std::vector<unsigned char> ending_bytes)
+{
+	std::vector<JPEG_Data> JPEG_Data_List;
+
+	for (int i = 0; i < input_File_Data.array_length; i++)
+	{
+		if (input_File_Data.array[i] == magic_bytes[0])
+		{
+			if (magic_bytes_found(input_File_Data.array, magic_bytes, i))
+			{
+				JPEG_Data Entry;
+				Entry = get_jpeg_entry(input_File_Data, ending_bytes, i);
+				JPEG_Data_List.push_back(Entry);
+			}
+		}
+	}
+
+	return JPEG_Data_List;
+}
+
+Data readInputFile(std::string filepath)
+{
+	std::ifstream file(filepath, std::ios::binary);
+
+	Data fileInput;
+
+	if(!file)
+	{
+		std::cerr << "Failed to open the file " << filepath << std::endl;
+
+		fileInput.array = NULL;
+
+		fileInput.array_length = NULL;
+
+		return fileInput;
+	}
+
+	file.seekg(0, std::ios::end);
+	std::streampos fileSize = file.tellg();
+	file.seekg(0, std::ios::beg);
+
+	char* charBuffer = new char[fileSize];
+
+	file.read(charBuffer, fileSize);
+
+
+	fileInput.array = new unsigned char[fileSize];
+	std::memcpy(fileInput.array, charBuffer, fileSize);
+	fileInput.array_length = static_cast<int>(fileSize);
+
+	delete[] charBuffer;
+
+	return fileInput;
+
+
+}
+
+std::vector<unsigned char> readJPEGFile(std::string filePath)
+{
+
+	std::ifstream file(filePath, std::ios::binary);
+	std::vector<unsigned char> encryptedInput;
+
+	int file_length = 0;
+
+	if (!file)
+	{
+		std::cerr << "Failed to open the file " << filePath << std::endl;
+		return encryptedInput;
+	}
+
+	char character;
+	while (file.get(character))
+	{
+		encryptedInput.push_back(character);
+		file_length++;
+	}
+	file.close();
+
+	Data file_input;
+
+	return encryptedInput;
+}
+
+void printEntry(JPEG_Data JPEG_Entry)
+{
+	for (int i = 0; i < JPEG_Entry.data_length; i++)
+	{
+		std::cout << JPEG_Entry.jpeg_data[i];
+	}
+	std::cout << std::endl;
 }
 
 void identify_jpegs(std::string input_filepath, unsigned char* magic_bytes)
 {
-	unsigned char* input_file_data = readKDB(input_filepath);
+	/*	
+	std::vector<unsigned char> input_file_data = readJPEGFile(input_filepath);
+
+	std::vector<unsigned char> ending_bytes = { 0xFF,0xD9 };
+
+	std::vector<unsigned char> magic_bytes_vector = { 0x4D, 0x42, 0x4B };
+
+	std::vector<JPEG_Data> JPEG_Data_List = detect_JPEGs(input_file_data, magic_bytes_vector, ending_bytes);
 
 	//grab jpeg and replace starting bytes
+	*/
+	Data inputFileData = readInputFile(input_filepath);
+
+	std::vector<unsigned char> ending_bytes = { 0xFF,0xD9 };
+
+	std::vector<unsigned char> magic_bytes_vector = { 0x4D, 0x42, 0x4B };
+
+	std::vector<JPEG_Data> JPEG_Data_List = store_JPEGs(inputFileData, magic_bytes_vector, ending_bytes);
+
+	for (JPEG_Data entry : JPEG_Data_List)
+	{
+		printEntry(entry);
+	}
 }
 
 int main()
 {
 	//challenge1();
 	readKDB("magic.kdb");
+
+	unsigned char* magic_bytes = get_magic_bytes();
+
+	identify_jpegs("input.bin", magic_bytes);
 	return 0;
 }
