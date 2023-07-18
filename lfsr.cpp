@@ -36,6 +36,10 @@ struct JPEG_Data
 	int offset;
 
 	int data_length;
+
+	int image_height;
+	
+	int image_width;
 };
 
 struct Entry
@@ -651,7 +655,7 @@ unsigned char* get_magic_bytes()
 		}
 	}
 }
-
+/*
 bool bytes_found(std::vector<unsigned char>& input_file_data, std::vector<unsigned char> magic_bytes, int current_index)
 {
 	for (int i = current_index; i < magic_bytes.size() + current_index; i++)
@@ -686,7 +690,7 @@ unsigned char* get_jpeg_data(std::vector<unsigned char>& input_file_data, std::v
 	return NULL;
 }
 
-std::vector<JPEG_Data> detect_JPEGs(std::vector<unsigned char> &input_file_data, std::vector<unsigned char> magic_bytes, std::vector<unsigned char> ending_bytes)
+std::vector<JPEG_Data> detect_JPEGs(std::vector<unsigned char>& input_file_data, std::vector<unsigned char> magic_bytes, std::vector<unsigned char> ending_bytes)
 {
 	std::vector<JPEG_Data> JPEG_Data_List;
 
@@ -705,7 +709,7 @@ std::vector<JPEG_Data> detect_JPEGs(std::vector<unsigned char> &input_file_data,
 
 	return JPEG_Data_List;
 }
-
+*/
 
 bool magic_bytes_found(unsigned char*& data, std::vector<unsigned char> magic_bytes, int current_index)
 {
@@ -747,7 +751,12 @@ JPEG_Data get_jpeg_entry(Data input_file_data, std::vector<unsigned char> ending
 	return entry;
 }
 
-
+void repair_JPEG(JPEG_Data &Jpeg)
+{
+	Jpeg.jpeg_data[0] = 0xFF;
+	Jpeg.jpeg_data[1] = 0xD8;
+	Jpeg.jpeg_data[2] = 0xFF;
+}
 
 std::vector<JPEG_Data> store_JPEGs(Data input_File_Data, std::vector<unsigned char> magic_bytes, std::vector<unsigned char> ending_bytes)
 {
@@ -761,6 +770,8 @@ std::vector<JPEG_Data> store_JPEGs(Data input_File_Data, std::vector<unsigned ch
 			{
 				JPEG_Data Entry;
 				Entry = get_jpeg_entry(input_File_Data, ending_bytes, i);
+				Entry.offset = i;
+				repair_JPEG(Entry);
 				JPEG_Data_List.push_back(Entry);
 			}
 		}
@@ -842,6 +853,30 @@ void printEntry(JPEG_Data JPEG_Entry)
 	std::cout << std::endl;
 }
 
+void get_image_dimensions(JPEG_Data &JPEG_Entry)
+{
+	//SOF Start of Frame marker for JPEGS
+
+	std::vector<unsigned char> SOF = { 0xFF, 0xC0 };
+
+	for (int i = 0; i < JPEG_Entry.data_length; i++)
+	{
+		if ((JPEG_Entry.jpeg_data[i] == SOF[0]) && (JPEG_Entry.jpeg_data[i + 1] == SOF[1]))
+		{
+			//length bytes are next pair
+			std::vector<unsigned char> segment_length = { JPEG_Entry.jpeg_data[i + 3], JPEG_Entry.jpeg_data[i + 4]};
+			//next byte is segment precision, skip
+			//next par is segment width
+			std::vector<unsigned char> segment_height = { JPEG_Entry.jpeg_data[i + 6], JPEG_Entry.jpeg_data[i + 7] };
+			//next pair is segment height
+			std::vector<unsigned char> segment_width = { JPEG_Entry.jpeg_data[i + 8], JPEG_Entry.jpeg_data[i +9] };
+			JPEG_Entry.image_height = (static_cast<uint16_t>(segment_height[1]) << 8) | segment_height[0];
+			JPEG_Entry.image_width = (static_cast<uint16_t>(segment_width[1]) << 8) | segment_width[0];
+			break;
+		}
+	}
+}
+
 void identify_jpegs(std::string input_filepath, unsigned char* magic_bytes)
 {
 	/*	
@@ -862,10 +897,12 @@ void identify_jpegs(std::string input_filepath, unsigned char* magic_bytes)
 	std::vector<unsigned char> magic_bytes_vector = { 0x4D, 0x42, 0x4B };
 
 	std::vector<JPEG_Data> JPEG_Data_List = store_JPEGs(inputFileData, magic_bytes_vector, ending_bytes);
-
-	for (JPEG_Data entry : JPEG_Data_List)
+	
+	for (JPEG_Data& entry : JPEG_Data_List)
 	{
-		printEntry(entry);
+		//printEntry(entry);
+		get_image_dimensions(entry);
+
 	}
 }
 
