@@ -35,7 +35,7 @@
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{4f371ecb-78b9-46f6-af83-c70c784ea516}</ProjectGuid>
-    <RootNamespace>ciphertechchallenge</RootNamespace>
+    <RootNamespace>lfsrtool</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

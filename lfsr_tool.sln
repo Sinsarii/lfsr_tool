@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33205.214
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cipher_tech_challenge", "cipher_tech_challenge.vcxproj", "{4F371ECB-78B9-46F6-AF83-C70C784EA516}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lfsr_tool", "lfsr_tool.vcxproj", "{4F371ECB-78B9-46F6-AF83-C70C784EA516}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
