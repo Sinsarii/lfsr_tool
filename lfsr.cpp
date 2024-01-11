@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <map>
 #include <string>
+#include <filesystem>
 /*
 * 
 
@@ -17,6 +18,8 @@
 
 
 */
+
+namespace fs = std::filesystem;
 
 struct Data
 {
@@ -877,6 +880,24 @@ void get_image_dimensions(JPEG_Data &JPEG_Entry)
 	}
 }
 
+void store_JPEG(JPEG_Data jpeg_entry, std::string destination_directory)
+{
+
+	fs::create_directory(destination_directory);
+	std::string filename = std::to_string(jpeg_entry.offset) + ".jpeg";
+	std::string file_path = destination_directory + "/" + filename;
+	std::ofstream outfile(file_path, std::ios::binary);
+	outfile.write(reinterpret_cast<const char*>(jpeg_entry.jpeg_data), jpeg_entry.data_length);
+}
+
+void store_all_JPEGS(std::vector<JPEG_Data> JPEG_Data_List, std::string destination_directory)
+{
+	for (JPEG_Data entry : JPEG_Data_List)
+	{
+		store_JPEG(entry, destination_directory);
+	}
+}
+
 void identify_jpegs(std::string input_filepath, unsigned char* magic_bytes)
 {
 	/*	
@@ -890,6 +911,9 @@ void identify_jpegs(std::string input_filepath, unsigned char* magic_bytes)
 
 	//grab jpeg and replace starting bytes
 	*/
+
+	std::string outputFolder = input_filepath + "_Repaired";
+
 	Data inputFileData = readInputFile(input_filepath);
 
 	std::vector<unsigned char> ending_bytes = { 0xFF,0xD9 };
@@ -904,6 +928,8 @@ void identify_jpegs(std::string input_filepath, unsigned char* magic_bytes)
 		get_image_dimensions(entry);
 
 	}
+
+	store_all_JPEGS(JPEG_Data_List, outputFolder);
 }
 
 int main()
