@@ -12,7 +12,7 @@ In this repository you'll find:
 * C++
     * C++17 or newer
     * Self contained, no external dependencies (only standard library functions used)
-    * C++11 can be used if <filesystem> library is not used.
+    * C++11 can be used if < filesystem > library is not used.
 
 # Functions
 * readKDB() - Reads input file and maps all data into blocks that can then be parsed and stored into a vector of found entries
